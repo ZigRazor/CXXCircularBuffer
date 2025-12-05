@@ -7,122 +7,6 @@
 namespace CXXCircularBuffer
 {
 
-    template <typename T>
-    class CircularBufferIterator
-    {
-    private:
-        const CircularBuffer *buffer_;
-        std::size_t index_;
-        std::size_t position_;
-
-    public:
-        typedef std::random_access_iterator_tag iterator_category;
-        typedef T value_type;
-        typedef ptrdiff_t difference_type;
-        typedef const T *pointer;
-        typedef const T &reference;
-
-        CircularBufferIterator() : buffer_(nullptr), index_(0), position_(0) {}
-
-        CircularBufferIterator(const CircularBuffer *buf, std::size_t idx, std::size_t pos)
-            : buffer_(buf), index_(idx), position_(pos) {}
-
-        reference operator*() const { return buffer_->buffer_[index_]; }
-        pointer operator->() const { return &buffer_->buffer_[index_]; }
-
-        CircularBufferIterator &operator++()
-        {
-            index_ = (index_ + 1) % Size;
-            ++position_;
-            return *this;
-        }
-
-        CircularBufferIterator operator++(int)
-        {
-            CircularBufferIterator tmp = *this;
-            ++(*this);
-            return tmp;
-        }
-
-        CircularBufferIterator &operator--()
-        {
-            index_ = (index_ == 0) ? Size - 1 : index_ - 1;
-            --position_;
-            return *this;
-        }
-
-        CircularBufferIterator operator--(int)
-        {
-            CircularBufferIterator tmp = *this;
-            --(*this);
-            return tmp;
-        }
-
-        CircularBufferIterator &operator+=(difference_type n)
-        {
-            position_ += n;
-            index_ = (index_ + n) % Size;
-            return *this;
-        }
-
-        CircularBufferIterator &operator-=(difference_type n)
-        {
-            return *this += (-n);
-        }
-
-        CircularBufferIterator operator+(difference_type n) const
-        {
-            CircularBufferIterator tmp = *this;
-            return tmp += n;
-        }
-
-        CircularBufferIterator operator-(difference_type n) const
-        {
-            CircularBufferIterator tmp = *this;
-            return tmp -= n;
-        }
-
-        difference_type operator-(const CircularBufferIterator &other) const
-        {
-            return position_ - other.position_;
-        }
-
-        reference operator[](difference_type n) const
-        {
-            return *(*this + n);
-        }
-
-        bool operator==(const CircularBufferIterator &other) const
-        {
-            return buffer_ == other.buffer_ && position_ == other.position_;
-        }
-
-        bool operator!=(const CircularBufferIterator &other) const
-        {
-            return !(*this == other);
-        }
-
-        bool operator<(const CircularBufferIterator &other) const
-        {
-            return position_ < other.position_;
-        }
-
-        bool operator>(const CircularBufferIterator &other) const
-        {
-            return other < *this;
-        }
-
-        bool operator<=(const CircularBufferIterator &other) const
-        {
-            return !(other < *this);
-        }
-
-        bool operator>=(const CircularBufferIterator &other) const
-        {
-            return !(*this < other);
-        }
-    };
-
     template <typename T, size_t Size>
     class CircularBuffer
     {
@@ -131,6 +15,7 @@ namespace CXXCircularBuffer
         T *buffer_;
         std::size_t head_ = 0;
         std::size_t tail_ = 0;
+        bool full_ = false;
 
     public:
         typedef T value_type;
@@ -161,9 +46,9 @@ namespace CXXCircularBuffer
             const_iterator(const CircularBuffer *buf, std::size_t idx, std::size_t pos)
                 : buffer_(buf), index_(idx), position_(pos) {}
 
-            // Conversion from iterator to const_iterator
-            const_iterator(const iterator &it)
-                : buffer_(it.buffer_), index_(it.index_), position_(it.position_) {}
+            // // Conversion from iterator to const_iterator
+            // const_iterator(const iterator &it)
+            //     : buffer_(it.buffer_), index_(it.index_), position_(it.position_) {}
 
             reference operator*() const { return buffer_->buffer_[index_]; }
             pointer operator->() const { return &buffer_->buffer_[index_]; }
@@ -261,6 +146,122 @@ namespace CXXCircularBuffer
             }
         };
 
+        // Iterator class
+        class CircularBufferIterator
+        {
+        private:
+            const CircularBuffer *buffer_;
+            std::size_t index_;
+            std::size_t position_;
+
+        public:
+            typedef std::random_access_iterator_tag iterator_category;
+            typedef T value_type;
+            typedef ptrdiff_t difference_type;
+            typedef const T *pointer;
+            typedef const T &reference;
+
+            CircularBufferIterator() : buffer_(nullptr), index_(0), position_(0) {}
+
+            CircularBufferIterator(const CircularBuffer *buf, std::size_t idx, std::size_t pos)
+                : buffer_(buf), index_(idx), position_(pos) {}
+
+            reference operator*() const { return buffer_->buffer_[index_]; }
+            pointer operator->() const { return &buffer_->buffer_[index_]; }
+
+            CircularBufferIterator &operator++()
+            {
+                index_ = (index_ + 1) % Size;
+                ++position_;
+                return *this;
+            }
+
+            CircularBufferIterator operator++(int)
+            {
+                CircularBufferIterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            CircularBufferIterator &operator--()
+            {
+                index_ = (index_ == 0) ? Size - 1 : index_ - 1;
+                --position_;
+                return *this;
+            }
+
+            CircularBufferIterator operator--(int)
+            {
+                CircularBufferIterator tmp = *this;
+                --(*this);
+                return tmp;
+            }
+
+            CircularBufferIterator &operator+=(difference_type n)
+            {
+                position_ += n;
+                index_ = (index_ + n) % Size;
+                return *this;
+            }
+
+            CircularBufferIterator &operator-=(difference_type n)
+            {
+                return *this += (-n);
+            }
+
+            CircularBufferIterator operator+(difference_type n) const
+            {
+                CircularBufferIterator tmp = *this;
+                return tmp += n;
+            }
+
+            CircularBufferIterator operator-(difference_type n) const
+            {
+                CircularBufferIterator tmp = *this;
+                return tmp -= n;
+            }
+
+            difference_type operator-(const CircularBufferIterator &other) const
+            {
+                return position_ - other.position_;
+            }
+
+            reference operator[](difference_type n) const
+            {
+                return *(*this + n);
+            }
+
+            bool operator==(const CircularBufferIterator &other) const
+            {
+                return buffer_ == other.buffer_ && position_ == other.position_;
+            }
+
+            bool operator!=(const CircularBufferIterator &other) const
+            {
+                return !(*this == other);
+            }
+
+            bool operator<(const CircularBufferIterator &other) const
+            {
+                return position_ < other.position_;
+            }
+
+            bool operator>(const CircularBufferIterator &other) const
+            {
+                return other < *this;
+            }
+
+            bool operator<=(const CircularBufferIterator &other) const
+            {
+                return !(other < *this);
+            }
+
+            bool operator>=(const CircularBufferIterator &other) const
+            {
+                return !(*this < other);
+            }
+        };
+
         // Const reverse iterator class
         class const_reverse_iterator
         {
@@ -281,9 +282,9 @@ namespace CXXCircularBuffer
             const_reverse_iterator(const CircularBuffer *buf, std::size_t idx, std::size_t pos)
                 : buffer_(buf), index_(idx), position_(pos) {}
 
-            // Conversion from reverse_iterator to const_reverse_iterator
-            const_reverse_iterator(const reverse_iterator &it)
-                : buffer_(it.buffer_), index_(it.index_), position_(it.position_) {}
+            // // Conversion from reverse_iterator to const_reverse_iterator
+            // const_reverse_iterator(const reverse_iterator &it)
+            //     : buffer_(it.buffer_), index_(it.index_), position_(it.position_) {}
 
             reference operator*() const { return buffer_->buffer_[index_]; }
             pointer operator->() const { return &buffer_->buffer_[index_]; }
@@ -326,7 +327,10 @@ namespace CXXCircularBuffer
 
             const_reverse_iterator &operator-=(difference_type n)
             {
-                return *this += (-n);
+                position_ -= n;
+                // Move forward in the buffer
+                index_ = (index_ + n % Size) % Size;
+                return *this;
             }
 
             const_reverse_iterator operator+(difference_type n) const
@@ -382,7 +386,7 @@ namespace CXXCircularBuffer
             }
         };
 
-        CircularBuffer() : buffer_(new T[Size]) head_(0), tail_(0) {}
+        CircularBuffer() : buffer_(new T[Size]), head_(0), tail_(0), full_(false) {}
 
         virtual ~CircularBuffer()
         {
@@ -391,7 +395,14 @@ namespace CXXCircularBuffer
 
         size_type size() const
         {
-            return (head_ >= tail_) ? (head_ - tail_) : (Size - tail_ + head_);
+            if (full_)
+            {
+                return Size;
+            }
+            else
+            {
+                return (head_ >= tail_) ? (head_ - tail_) : (Size - tail_ + head_);
+            }
         }
 
         size_type capacity() const
@@ -406,41 +417,54 @@ namespace CXXCircularBuffer
 
         bool empty() const
         {
-            return head_ == tail_;
+            if (full_)
+            {
+                return false;
+            }
+            else
+            {
+                return head_ == tail_;
+            }
         }
 
         reference front()
         {
-            return buffer_[head_];
+            return buffer_[tail_];
         }
 
         reference back()
         {
-            return buffer_[tail_];
+            return buffer_[head_ == 0 ? Size - 1 : head_ - 1];
         }
 
         const_reference front() const
         {
-            return buffer_[head_];
+            return buffer_[tail_];
         }
 
         const_reference back() const
         {
-            return buffer_[tail_];
+            return buffer_[head_ == 0 ? Size - 1 : head_ - 1];
         }
 
         void clear()
         {
             head_ = tail_ = 0;
+            full_ = false;
         }
 
         void push_back(const T &item)
         {
+            bool isEmpty = empty();
             buffer_[head_] = item;
             head_ = (head_ + 1) % Size;
-            if (head_ == tail_)
+            if (!isEmpty && head_ == tail_ % Size)
             {
-                tail_ = (tail_ + 1) % Size; // Overwrite the oldest data
+                full_ = true;
+            }
+            else if (!isEmpty && head_ == (tail_ + 1) % Size)
+            {
+                tail_ = (tail_ + 1) % Size;
             }
         }
 
@@ -449,12 +473,13 @@ namespace CXXCircularBuffer
             if (!empty())
             {
                 tail_ = (tail_ + 1) % Size;
+                full_ = false;
             }
         }
 
         const_reference operator[](size_type index) const
         {
-            return buffer_[index];
+            return buffer_[(tail_ + index) % Size];
         }
 
         const_iterator begin() const
